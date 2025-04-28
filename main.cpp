@@ -9,41 +9,41 @@
 int main() {
     using namespace pr;
 
-    Stopwatch sw;
+    //Stopwatch sw;
 
-    PCG rng;
-    std::minstd_rand minrand;
-    for (int i = 0; i < 10000; i++)
-    {
-        static std::vector<int> data;
-        data.clear();
+    //PCG rng;
+    //std::minstd_rand minrand;
+    //for (int i = 0; i < 10000; i++)
+    //{
+    //    static std::vector<int> data;
+    //    data.clear();
 
-        int size = 10 + rng.uniform() % 64;
-        for (int j = 0; j < size; j++)
-        {
-            data.push_back(rng.uniform() % 10);
-        }
+    //    int size = 10 + rng.uniform() % 64;
+    //    for (int j = 0; j < size; j++)
+    //    {
+    //        data.push_back(rng.uniform() % 10);
+    //    }
 
-        for (int j = 0; j < 1000; j++)
-        {
-            int i_th = rng.uniform() % size;
-        
-            //std::nth_element(data.begin(), data.begin() + i_th, data.end());
-            kdtree::quick_select(data.data(), data.size(), i_th);
+    //    for (int j = 0; j < 1000; j++)
+    //    {
+    //        int i_th = rng.uniform() % size;
+    //    
+    //        //std::nth_element(data.begin(), data.begin() + i_th, data.end());
+    //        kdtree::quick_select(data.data(), data.size(), i_th);
 
-            int i_th_val = data[i_th];
+    //        int i_th_val = data[i_th];
 
-            std::shuffle(data.begin(), data.end(), minrand);
+    //        std::shuffle(data.begin(), data.end(), minrand);
 
-            std::nth_element(data.begin(), data.begin() + i_th, data.end());
+    //        std::nth_element(data.begin(), data.begin() + i_th, data.end());
 
-            PR_ASSERT(data[i_th] == i_th_val);
+    //        PR_ASSERT(data[i_th] == i_th_val);
 
-            // 
-        }
-    }
+    //        // 
+    //    }
+    //}
 
-    printf("%f\n", sw.elapsed());
+    //printf("%f\n", sw.elapsed());
 
     Config config;
     config.ScreenWidth = 1920;
@@ -79,32 +79,12 @@ int main() {
         {
             glm::vec2 p = { rng.uniformf(), rng.uniformf() };
 
-            DrawCircle({ p.x, p.y, 0.0f }, { 0, 0, 1 }, {255, 255,0 }, 0.01f);
-
+            DrawPoint({ p.x, p.y, 0.0f }, { 255, 255, 255 }, 3);
             points.push_back({ p.x, p.y });
         }
 
-
-        kdtree::Vec2 lower;
-        kdtree::Vec2 upper;
-        for (int i = 0; i < 2; i++)
-        {
-            lower[i] = +FLT_MAX;
-            upper[i] = -FLT_MAX;
-        }
-        for (auto p : points)
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                lower[i] = kdtree::ss_min(lower[i], p[i]);
-                upper[i] = kdtree::ss_max(upper[i], p[i]);
-            }
-        }
-
-        DrawAABB({ lower[0], lower[1], 0.0f}, { upper[0], upper[1], 0.0f}, {255, 255, 255});
-
         std::vector<kdtree::Node> nodes;
-        kdtree::build(&nodes, points.data(), points.data() + points.size(), lower, upper);
+        kdtree::build(&nodes, points.data(), points.size());
 
         PopGraphicState();
         EndCamera();

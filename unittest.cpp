@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "prp.hpp"
+#include "pr.hpp"
 #include "kdtree.h"
 
 TEST_CASE("int", "") {
