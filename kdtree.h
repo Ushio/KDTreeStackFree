@@ -1,3 +1,4 @@
+#pragma once
 
 namespace kdtree
 {
@@ -18,13 +19,24 @@ namespace kdtree
         return ss_min(ss_max(x, lower), upper);
     }
 
-
     struct Vec2
     {
         float xs[2];
         float& operator[](int i) { return xs[i]; }
         const float& operator[](int i) const { return xs[i]; }
     };
+
+    inline float distanceSquared(Vec2 a, Vec2 b)
+    {
+        enum { dims = 2 };
+        float d2 = 0.0f;
+        for (int i = 0; i < dims; i++)
+        {
+            float d = a[i] - b[i];
+            d2 += d * d;
+        }
+        return d2;
+    }
 
 
     inline int clz(uint32_t x)
@@ -220,5 +232,100 @@ namespace kdtree
         int capacity = node_capacity(depth(nPoints));
         nodes->resize(capacity + 1 /*1 based array*/);
         build(nodes->data(), 1, ps, 0, nPoints, lower, upper);
+    }
+
+    template <class F>
+    void radius_query(const Node* nodes, int nPoints, Vec2 point, float radius, F f)
+    {
+        float r2 = radius * radius;
+
+        int stack[32];
+        int sp = 0;
+        stack[sp++] = 0;
+
+        int current_node = 1;
+        while (0 < current_node)
+        {
+            if (nPoints < current_node)
+            {
+                current_node = stack[--sp];
+                continue;
+            }
+
+            auto node = nodes[current_node];
+            float d2 = distanceSquared(node.p, point );
+            if (d2 < r2)
+            {
+                f(node.p);
+            }
+
+            pr::DrawCircle({ node.p[0], node.p[1], 0.0f }, { 0, 0, 1 }, { 255, 0, 255 }, 0.02f);
+            
+            int near_node = l_child(current_node); 
+            int far_node = r_child(current_node);
+
+            float d = point[node.axis] - node.p[node.axis];
+            if (0.0f < d)
+            {
+                std::swap(near_node, far_node);
+            }
+
+            current_node = near_node;
+
+            if (d * d < r2)
+            {
+                stack[sp++] = far_node;
+            }
+        }
+    }
+
+    Vec2 closest_query(const Node* nodes, int nPoints, Vec2 point)
+    {
+        int index = 0;
+
+        float r2 = FLT_MAX;
+        Vec2 closest = {};
+
+        int stack[32];
+        int sp = 0;
+        stack[sp++] = 0;
+
+        int current_node = 1;
+        while (0 < current_node)
+        {
+            if (nPoints < current_node)
+            {
+                current_node = stack[--sp];
+                continue;
+            }
+
+            auto node = nodes[current_node];
+            float d2 = distanceSquared(node.p, point);
+            if (d2 < r2)
+            {
+                r2 = d2;
+                closest = node.p;
+            }
+
+            pr::DrawCircle({ node.p[0], node.p[1], 0.0f }, { 0, 0, 1 }, { 0, 0, 255 }, 0.02f);
+            pr::DrawText({ node.p[0], node.p[1], 0.0f }, std::to_string(index++));
+
+            int near_node = l_child(current_node);
+            int far_node = r_child(current_node);
+
+            float d = point[node.axis] - node.p[node.axis];
+            if (0.0f < d)
+            {
+                std::swap(near_node, far_node);
+            }
+
+            current_node = near_node;
+
+            if (d * d < r2)
+            {
+                stack[sp++] = far_node;
+            }
+        }
+        return closest;
     }
 }
