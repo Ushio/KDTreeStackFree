@@ -19,25 +19,27 @@ namespace kdtree
         return ss_min(ss_max(x, lower), upper);
     }
 
-    struct Vec2
+    template <int N>
+    struct VecN
     {
-        float xs[2];
+        float xs[N];
         float& operator[](int i) { return xs[i]; }
         const float& operator[](int i) const { return xs[i]; }
+        int dims() const { return N; }
     };
+    using Vec2 = VecN<2>;
 
-    inline float distanceSquared(Vec2 a, Vec2 b)
+    template <class T>
+    inline float distanceSquared(T a, T b)
     {
-        enum { dims = 2 };
         float d2 = 0.0f;
-        for (int i = 0; i < dims; i++)
+        for (int i = 0; i < a.dims(); i++)
         {
             float d = a[i] - b[i];
             d2 += d * d;
         }
         return d2;
     }
-
 
     inline int clz(uint32_t x)
     {
@@ -327,5 +329,135 @@ namespace kdtree
             }
         }
         return closest;
+    }
+
+    inline Vec2 closest_query_stackfree(const Node* nodes, int nPoints, Vec2 point)
+    {
+        int index = 0;
+
+        float r2 = FLT_MAX;
+        Vec2 closest = {};
+
+        int current_node = 1;
+        int prev_node = -1;
+        while (0 < current_node)
+        {
+            int parent_node = parent(current_node);
+
+            if( nPoints < current_node ) // done. so go back
+            {
+                prev_node = current_node;
+                current_node = parent_node;
+                continue;
+            }
+
+            bool descent = prev_node < current_node;
+
+            auto node = nodes[current_node];
+
+            if (descent)
+            {
+                float d2 = distanceSquared(node.p, point);
+                if (d2 < r2)
+                {
+                    r2 = d2;
+                    closest = node.p;
+                }
+                pr::DrawCircle({ node.p[0], node.p[1], 0.0f }, { 0, 0, 1 }, { 0, 0, 255 }, 0.02f);
+                pr::DrawText({ node.p[0], node.p[1], 0.0f }, std::to_string(index++));
+            }
+
+            int near_node = l_child(current_node);
+            int far_node = r_child(current_node);
+
+            float d = point[node.axis] - node.p[node.axis];
+            if (0.0f < d)
+            {
+                std::swap(near_node, far_node);
+            }
+
+            int next_node;
+            if (descent)
+            {
+                next_node = near_node;
+            }
+            else if( prev_node == near_node ) // meaning that far_node may need to traverse
+            {
+                bool traverse_far = d * d < r2;
+                next_node = traverse_far ? far_node : parent_node;
+            }
+            else // meaning that both have done
+            {
+                next_node = parent_node;
+            }
+
+            prev_node = current_node;
+            current_node = next_node;
+        }
+        return closest;
+    }
+
+    template <class F>
+    void radius_query_stackfree(const Node* nodes, int nPoints, Vec2 point, float radius, F f)
+    {
+        int index = 0;
+
+        float r2 = radius * radius;
+
+        int current_node = 1;
+        int prev_node = -1;
+        while (0 < current_node)
+        {
+            int parent_node = parent(current_node);
+
+            if (nPoints < current_node) // done. so go back
+            {
+                prev_node = current_node;
+                current_node = parent_node;
+                continue;
+            }
+
+            bool descent = prev_node < current_node;
+
+            auto node = nodes[current_node];
+
+            if (descent)
+            {
+                float d2 = distanceSquared(node.p, point);
+                if (d2 < r2)
+                {
+                    f(node.p);
+                }
+                pr::DrawCircle({ node.p[0], node.p[1], 0.0f }, { 0, 0, 1 }, { 0, 0, 255 }, 0.02f);
+                pr::DrawText({ node.p[0], node.p[1], 0.0f }, std::to_string(index++));
+            }
+
+            int near_node = l_child(current_node);
+            int far_node = r_child(current_node);
+
+            float d = point[node.axis] - node.p[node.axis];
+            if (0.0f < d)
+            {
+                std::swap(near_node, far_node);
+            }
+
+            int next_node;
+            if (descent)
+            {
+                next_node = near_node;
+            }
+            else if (prev_node == near_node) // meaning that far_node may need to traverse
+            {
+                bool traverse_far = d * d < r2;
+                next_node = traverse_far ? far_node : parent_node;
+            }
+            else // meaning that both have done
+            {
+                next_node = parent_node;
+            }
+
+            prev_node = current_node;
+            current_node = next_node;
+        }
     }
 }
