@@ -75,7 +75,7 @@ int main() {
 
         std::vector<kdtree::Vec2> points;
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 128; i++)
         {
             glm::vec2 p = { rng.uniformf(), rng.uniformf() };
 
@@ -83,8 +83,8 @@ int main() {
             points.push_back({ p.x, p.y });
         }
 
-        std::vector<kdtree::Node> nodes;
-        kdtree::build(&nodes, points.data(), points.size());
+        std::vector<kdtree::Node> nodes(kdtree::storage_size(points.size()));
+        kdtree::build(nodes.data(), points.data(), points.size());
 
         static float radius = 0.2f;
         static glm::vec3 p = { 0.5f, 0.5f, 0 };
