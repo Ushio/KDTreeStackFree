@@ -168,30 +168,19 @@ namespace kdtree
         return capacity + 1;
     }
 
-    inline void build(Node* nodes, int node_idx, Vec2* ps, int point_beg, int point_end, Vec2 lower, Vec2 upper)
+    template <int dims>
+    inline void build(Node* nodes, int node_idx, VecN<dims>* ps, int point_beg, int point_end, VecN<dims> lower, VecN<dims> upper)
     {
         if (point_beg == point_end)
         {
             return;
         }
 
-        enum { dims = 2 };
         int axis = large_axis(lower, upper, dims);
 
         int n = point_end - point_beg;
         int L = lbalanced(n);
-        quick_select(ps + point_beg, n, L, [axis](Vec2 a, Vec2 b) { return a[axis] < b[axis]; });
-
-        //for (int i = 0; i < L; i++)
-        //{
-        //    auto p = ps[i];
-        //    pr::DrawCircle({ p[0], p[1], 0.0f}, {0, 0, 1}, {255, 255,0}, 0.01f);
-        //}
-        //for (int i = L + 1; i < n; i++)
-        //{
-        //    auto p = ps[i];
-        //    pr::DrawCircle({ p[0], p[1], 0.0f }, { 0, 0, 1 }, { 255,0 ,255 }, 0.01f);
-        //}
+        quick_select(ps + point_beg, n, L, [axis](VecN<dims> a, VecN<dims> b) { return a[axis] < b[axis]; });
 
         Node node;
         node.axis = axis;
@@ -199,27 +188,28 @@ namespace kdtree
         nodes[node_idx] = node;
 
         {
-            Vec2 lineBeg = lower;
-            Vec2 lineEnd = upper;
+            VecN<dims> lineBeg = lower;
+            VecN<dims> lineEnd = upper;
             lineBeg[axis] = node.p[node.axis];
             lineEnd[axis] = node.p[node.axis];
             pr::DrawLine({ lineBeg[0],  lineBeg[1], 0.0f }, { lineEnd[0],  lineEnd[1], 0.0f }, { 128, 128, 128 });
         }
 
-        Vec2 lUpper = upper;
+        VecN<dims> lUpper = upper;
         lUpper[axis] = node.p[node.axis];
 
-        Vec2 rLower = lower;
+        VecN<dims> rLower = lower;
         rLower[axis] = node.p[node.axis];
 
         build(nodes, l_child(node_idx), ps, point_beg, point_beg + L, lower, lUpper);
         build(nodes, r_child(node_idx), ps, point_beg + L + 1, point_end, rLower, upper );
     }
-    void build(Node* nodes, Vec2* ps, int nPoints)
+
+    template <int dims>
+    void build(Node* nodes, VecN<dims>* ps, int nPoints)
     {
-        enum { dims = 2 };
-        Vec2 lower;
-        Vec2 upper;
+        VecN<dims> lower;
+        VecN<dims> upper;
         for (int i = 0; i < dims; i++)
         {
             lower[i] = +FLT_MAX;
@@ -334,12 +324,13 @@ namespace kdtree
     //    return closest;
     //}
 
-    inline Vec2 closest_query_stackfree(const Node* nodes, int nPoints, Vec2 point)
+    template <int dims>
+    inline VecN<dims> closest_query_stackfree(const Node* nodes, int nPoints, VecN<dims> point)
     {
         int index = 0;
 
         float r2 = FLT_MAX;
-        Vec2 closest = {};
+        VecN<dims> closest = {};
 
         int current_node = 1;
         int prev_node = -1;
@@ -360,7 +351,7 @@ namespace kdtree
 
             if (descent)
             {
-                float d2 = distanceSquared(node.p, point, 2);
+                float d2 = distanceSquared(node.p, point, dims);
                 if (d2 < r2)
                 {
                     r2 = d2;
@@ -400,8 +391,8 @@ namespace kdtree
         return closest;
     }
 
-    template <class F>
-    void radius_query_stackfree(const Node* nodes, int nPoints, Vec2 point, float radius, F f)
+    template <class F, int dims>
+    void radius_query_stackfree(const Node* nodes, int nPoints, VecN<dims> point, float radius, F f)
     {
         int index = 0;
 
@@ -426,7 +417,7 @@ namespace kdtree
 
             if (descent)
             {
-                float d2 = distanceSquared(node.p, point, 2);
+                float d2 = distanceSquared(node.p, point, dims);
                 if (d2 < r2)
                 {
                     f(node.p);
