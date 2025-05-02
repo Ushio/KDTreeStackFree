@@ -254,7 +254,7 @@ namespace kdtree
         int index = 0;
 
         float r2 = FLT_MAX;
-        Node<dims> closest = {};
+        int closest_index;
 
         int curr_node = 1;
         int prev_node = -1;
@@ -279,7 +279,7 @@ namespace kdtree
                 if (d2 < r2)
                 {
                     r2 = d2;
-                    closest = node;
+                    closest_index = node.src_index;
                 }
                 pr::DrawCircle({ node.p[0], node.p[1], 0.0f }, { 0, 0, 1 }, { 0, 0, 255 }, 0.02f);
                 pr::DrawText({ node.p[0], node.p[1], 0.0f }, std::to_string(index++));
@@ -312,7 +312,7 @@ namespace kdtree
             prev_node = curr_node;
             curr_node = next_node;
         }
-        return closest.src_index;
+        return closest_index;
     }
 
     template <int dims, class F>

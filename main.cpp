@@ -93,16 +93,16 @@ int main() {
 
         pr::DrawCircle(p, { 0, 0, 1 }, { 255, 255,0 }, radius);
         
-        //{
-        //    int idx = kdtree::closest_query_stackfree(nodes.data(), points.size(), kdtree::Vec2{ p.x, p.y });
-        //    kdtree::Vec2 closest = points[idx];
-        //    pr::DrawCircle({ closest[0], closest[1], 0.0f }, { 0, 0, 1 }, { 255, 0, 0 }, 0.01f);
-        //}
+        {
+            int idx = kdtree::closest_query_stackfree(nodes.data(), points.size(), { p.x, p.y });
+            kdtree::VecN<2> closest = points[idx];
+            pr::DrawCircle({ closest[0], closest[1], 0.0f }, { 0, 0, 1 }, { 255, 0, 0 }, 0.01f);
+        }
 
-        kdtree::radius_query(nodes.data(), points.size(), { p.x, p.y }, radius, [&points](int index) {
-            auto p = points[index];
-            DrawPoint({ p[0], p[1], 0.0f }, { 255, 0, 0 }, 8);
-        });
+        //kdtree::radius_query(nodes.data(), points.size(), { p.x, p.y }, radius, [&points](int index) {
+        //    auto p = points[index];
+        //    DrawPoint({ p[0], p[1], 0.0f }, { 255, 0, 0 }, 8);
+        //});
 
         PopGraphicState();
         EndCamera();
