@@ -172,14 +172,7 @@ namespace kdtree
     namespace details
     {
         template <int dims>
-        struct IndexedVecN
-        {
-            VecN<dims> p;
-            int src_index;
-        };
-
-        template <int dims>
-        inline void build(Node<dims>* nodes, int node_idx, IndexedVecN<dims>* ps, int point_beg, int point_end, VecN<dims> lower, VecN<dims> upper)
+        inline void build(Node<dims>* nodes, int node_idx, const VecN<dims>* ps, int* indices, int point_beg, int point_end, VecN<dims> lower, VecN<dims> upper)
         {
             if (point_beg == point_end)
             {
@@ -190,12 +183,13 @@ namespace kdtree
 
             int n = point_end - point_beg;
             int L = lbalanced(n);
-            quick_select(ps + point_beg, n, L, [axis](const IndexedVecN<dims>& a, const IndexedVecN<dims>& b) { return a.p[axis] < b.p[axis]; });
+            quick_select(indices + point_beg, n, L, [axis, ps](int a, int b) { return ps[a][axis] < ps[b][axis]; });
 
+            int mid_index = indices[point_beg + L];
             Node<dims> node;
             node.axis = axis;
-            node.p = ps[point_beg + L].p;
-            node.src_index = ps[point_beg + L].src_index;
+            node.p = ps[mid_index];
+            node.src_index = mid_index;
             nodes[node_idx] = node;
 
             {
@@ -212,8 +206,8 @@ namespace kdtree
             VecN<dims> rLower = lower;
             rLower[axis] = node.p[node.axis];
 
-            build(nodes, l_child(node_idx), ps, point_beg, point_beg + L, lower, lUpper);
-            build(nodes, r_child(node_idx), ps, point_beg + L + 1, point_end, rLower, upper );
+            build(nodes, l_child(node_idx), ps, indices, point_beg, point_beg + L, lower, lUpper);
+            build(nodes, r_child(node_idx), ps, indices, point_beg + L + 1, point_end, rLower, upper );
         }
     }
     template <int dims>
@@ -237,14 +231,12 @@ namespace kdtree
 
         pr::DrawAABB({ lower[0], lower[1], 0.0f }, { upper[0], upper[1], 0.0f }, { 255, 255, 255 });
 
-        std::vector<details::IndexedVecN<dims>> indexed(nPoints);
+        std::vector<int> indices(nPoints);
         for (int i = 0; i < nPoints; i++)
         {
-            indexed[i].p = ps[i];
-            indexed[i].src_index = i;
+            indices[i] = i;
         }
-
-        details::build(nodes, 1, indexed.data(), 0, nPoints, lower, upper);
+        details::build(nodes, 1, ps, indices.data(), 0, nPoints, lower, upper);
     }
 
 
