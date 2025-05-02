@@ -26,7 +26,6 @@ namespace kdtree
         float& operator[](int i) { return xs[i]; }
         const float& operator[](int i) const { return xs[i]; }
     };
-    using Vec2 = VecN<2>;
 
     template <class T>
     inline float distanceSquared(T a, T b, int dims)
@@ -156,9 +155,10 @@ namespace kdtree
         return node / 2;
     }
 
+    template <int dims>
     struct Node
     {
-        Vec2 p;
+        VecN<dims> p;
         int src_index;
         int axis;
     };
@@ -186,7 +186,7 @@ namespace kdtree
         };
 
         template <int dims>
-        inline void build(Node* nodes, int node_idx, IndexedVecN<dims>* ps, int point_beg, int point_end, VecN<dims> lower, VecN<dims> upper)
+        inline void build(Node<dims>* nodes, int node_idx, IndexedVecN<dims>* ps, int point_beg, int point_end, VecN<dims> lower, VecN<dims> upper)
         {
             if (point_beg == point_end)
             {
@@ -199,7 +199,7 @@ namespace kdtree
             int L = lbalanced(n);
             quick_select(ps + point_beg, n, L, [axis](IndexedVecN<dims> a, IndexedVecN<dims> b) { return a[axis] < b[axis]; });
 
-            Node node;
+            Node<dims> node;
             node.axis = axis;
             node.p = ps[point_beg + L];
             node.src_index = ps[point_beg + L].src_index;
@@ -222,10 +222,9 @@ namespace kdtree
             build(nodes, l_child(node_idx), ps, point_beg, point_beg + L, lower, lUpper);
             build(nodes, r_child(node_idx), ps, point_beg + L + 1, point_end, rLower, upper );
         }
-
     }
     template <int dims>
-    void build(Node* nodes, const VecN<dims>* ps, int nPoints)
+    void build(Node<dims>* nodes, const VecN<dims>* ps, int nPoints)
     {
         VecN<dims> lower;
         VecN<dims> upper;
@@ -255,13 +254,14 @@ namespace kdtree
         details::build(nodes, 1, indexed.data(), 0, nPoints, lower, upper);
     }
 
+
     template <int dims>
-    inline int closest_query_stackfree(const Node* nodes, int nPoints, VecN<dims> point)
+    inline int closest_query_stackfree(const Node<dims>* nodes, int nPoints, VecN<dims> point)
     {
         int index = 0;
 
         float r2 = FLT_MAX;
-        Node closest = {};
+        Node<dims> closest = {};
 
         int curr_node = 1;
         int prev_node = -1;
@@ -323,7 +323,7 @@ namespace kdtree
     }
 
     template <int dims, class F>
-    void radius_query(const Node* nodes, int nPoints, VecN<dims> point, float radius, F f)
+    void radius_query(const Node<dims>* nodes, int nPoints, VecN<dims> point, float radius, F f)
     {
         float r2 = radius * radius;
 

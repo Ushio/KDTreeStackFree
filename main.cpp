@@ -73,7 +73,7 @@ int main() {
 
         PCG rng;
 
-        std::vector<kdtree::Vec2> points;
+        std::vector<kdtree::VecN<2>> points;
 
         for (int i = 0; i < 128; i++)
         {
@@ -83,7 +83,7 @@ int main() {
             points.push_back({ p.x, p.y });
         }
 
-        std::vector<kdtree::Node> nodes(kdtree::storage_size(points.size()));
+        std::vector<kdtree::Node<2>> nodes(kdtree::storage_size(points.size()));
         kdtree::build(nodes.data(), points.data(), points.size());
 
         static float radius = 0.2f;
@@ -92,17 +92,14 @@ int main() {
         p.z = 0.0f;
 
         pr::DrawCircle(p, { 0, 0, 1 }, { 255, 255,0 }, radius);
-
-        //kdtree::radius_query(nodes.data(), points.size(), { p.x, p.y }, radius, [](kdtree::Vec2 p) {
-        //    pr::DrawCircle({ p[0], p[1], 0.0f}, {0, 0, 1}, {255, 0, 0}, 0.01f);
-        //});
+        
         //{
         //    int idx = kdtree::closest_query_stackfree(nodes.data(), points.size(), kdtree::Vec2{ p.x, p.y });
         //    kdtree::Vec2 closest = points[idx];
         //    pr::DrawCircle({ closest[0], closest[1], 0.0f }, { 0, 0, 1 }, { 255, 0, 0 }, 0.01f);
         //}
 
-        kdtree::radius_query(nodes.data(), points.size(), kdtree::Vec2{ p.x, p.y }, radius, [&points](int index) {
+        kdtree::radius_query(nodes.data(), points.size(), { p.x, p.y }, radius, [&points](int index) {
             auto p = points[index];
             DrawPoint({ p[0], p[1], 0.0f }, { 255, 0, 0 }, 8);
         });
