@@ -172,17 +172,10 @@ namespace kdtree
     namespace details
     {
         template <int dims>
-        struct IndexedVecN : public VecN<dims>
+        struct IndexedVecN
         {
+            VecN<dims> p;
             int src_index;
-
-            void set(VecN<dims> p)
-            {
-                for (int i = 0; i < dims; i++)
-                {
-                    xs[i] = p[i];
-                }
-            }
         };
 
         template <int dims>
@@ -197,11 +190,11 @@ namespace kdtree
 
             int n = point_end - point_beg;
             int L = lbalanced(n);
-            quick_select(ps + point_beg, n, L, [axis](IndexedVecN<dims> a, IndexedVecN<dims> b) { return a[axis] < b[axis]; });
+            quick_select(ps + point_beg, n, L, [axis](const IndexedVecN<dims>& a, const IndexedVecN<dims>& b) { return a.p[axis] < b.p[axis]; });
 
             Node<dims> node;
             node.axis = axis;
-            node.p = ps[point_beg + L];
+            node.p = ps[point_beg + L].p;
             node.src_index = ps[point_beg + L].src_index;
             nodes[node_idx] = node;
 
@@ -247,7 +240,7 @@ namespace kdtree
         std::vector<details::IndexedVecN<dims>> indexed(nPoints);
         for (int i = 0; i < nPoints; i++)
         {
-            indexed[i].set(ps[i]);
+            indexed[i].p = ps[i];
             indexed[i].src_index = i;
         }
 
