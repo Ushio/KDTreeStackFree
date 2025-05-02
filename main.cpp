@@ -97,12 +97,14 @@ int main() {
         //    pr::DrawCircle({ p[0], p[1], 0.0f}, {0, 0, 1}, {255, 0, 0}, 0.01f);
         //});
         //{
-        //    kdtree::Vec2 closest = kdtree::closest_query_stackfree(nodes.data(), points.size(), kdtree::Vec2{ p.x, p.y });
+        //    int idx = kdtree::closest_query_stackfree(nodes.data(), points.size(), kdtree::Vec2{ p.x, p.y });
+        //    kdtree::Vec2 closest = points[idx];
         //    pr::DrawCircle({ closest[0], closest[1], 0.0f }, { 0, 0, 1 }, { 255, 0, 0 }, 0.01f);
         //}
-        kdtree::radius_query_stackfree(nodes.data(), points.size(), kdtree::Vec2{ p.x, p.y }, radius, [](kdtree::Vec2 p) {
+
+        kdtree::radius_query(nodes.data(), points.size(), kdtree::Vec2{ p.x, p.y }, radius, [&points](int index) {
+            auto p = points[index];
             DrawPoint({ p[0], p[1], 0.0f }, { 255, 0, 0 }, 8);
-            pr::DrawCircle({ p[0], p[1], 0.0f}, {0, 0, 1}, {255, 0, 0}, 0.01f);
         });
 
         PopGraphicState();
