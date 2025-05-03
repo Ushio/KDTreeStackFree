@@ -86,6 +86,10 @@ int main() {
         std::vector<kdtree::Node<2>> nodes(kdtree::storage_size(points.size()));
         kdtree::build(nodes.data(), points.data(), points.size());
 
+        kdtree::volume_visit(nodes.data(), points.size(), [](kdtree::VecN<2> lower, kdtree::VecN<2> upper) {
+            pr::DrawAABB({ lower[0], lower[1], 0.0f }, { upper[0], upper[1], 0.0f }, { 128, 128, 128 });
+        });
+
         static float radius = 0.2f;
         static glm::vec3 p = { 0.5f, 0.5f, 0 };
         ManipulatePosition(camera, &p, 0.2f);

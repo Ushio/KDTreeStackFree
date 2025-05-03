@@ -192,14 +192,6 @@ namespace kdtree
             node.src_index = mid_index;
             nodes[node_idx] = node;
 
-            {
-                VecN<dims> lineBeg = lower;
-                VecN<dims> lineEnd = upper;
-                lineBeg[axis] = node.p[node.axis];
-                lineEnd[axis] = node.p[node.axis];
-                pr::DrawLine({ lineBeg[0],  lineBeg[1], 0.0f }, { lineEnd[0],  lineEnd[1], 0.0f }, { 128, 128, 128 });
-            }
-
             VecN<dims> lUpper = upper;
             lUpper[axis] = node.p[node.axis];
 
@@ -229,14 +221,58 @@ namespace kdtree
             }
         }
 
-        pr::DrawAABB({ lower[0], lower[1], 0.0f }, { upper[0], upper[1], 0.0f }, { 255, 255, 255 });
-
         std::vector<int> indices(nPoints);
         for (int i = 0; i < nPoints; i++)
         {
             indices[i] = i;
         }
         details::build(nodes, 1, ps, indices.data(), 0, nPoints, lower, upper);
+    }
+
+    namespace details {
+        template<int dims, class F>
+        void volume_visit(const Node<dims>* nodes, int nPoints, int node_idx, VecN<dims> lower, VecN<dims> upper, F f)
+        {
+            if (nPoints < node_idx)
+            {
+                f(lower, upper);
+                return;
+            }
+
+            auto node = nodes[node_idx];
+
+            VecN<dims> lUpper = upper;
+            lUpper[node.axis] = node.p[node.axis];
+
+            VecN<dims> rLower = lower;
+            rLower[node.axis] = node.p[node.axis];
+
+            volume_visit(nodes, nPoints, l_child(node_idx), lower, lUpper, f);
+            volume_visit(nodes, nPoints, r_child(node_idx), rLower, upper, f);
+        }
+    }
+
+    template<int dims, class F>
+    void volume_visit(const Node<dims>* nodes, int nPoints, F f)
+    {
+        VecN<dims> lower;
+        VecN<dims> upper;
+        for (int i = 0; i < dims; i++)
+        {
+            lower[i] = +FLT_MAX;
+            upper[i] = -FLT_MAX;
+        }
+
+        for (int j = 1; j < nPoints + 1; j++)
+        {
+            for (int i = 0; i < dims; i++)
+            {
+                lower[i] = ss_min(lower[i], nodes[j].p[i]);
+                upper[i] = ss_max(upper[i], nodes[j].p[i]);
+            }
+        }
+
+        details::volume_visit(nodes, nPoints, 1, lower, upper, f);
     }
 
 
