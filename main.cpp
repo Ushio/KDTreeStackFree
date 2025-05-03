@@ -71,6 +71,7 @@ int main() {
         DrawGrid(GridAxis::XY, 1.0f, 10, { 128, 128, 128 });
         DrawXYZAxis(1.0f);
 
+        static int n = 128;
         static float radius = 0.2f;
         static glm::vec3 p = { 0.5f, 0.5f, 0 };
         ManipulatePosition(camera, &p, 0.2f);
@@ -91,7 +92,7 @@ int main() {
 
             std::vector<kdtree::VecN<2>> points;
 
-            for (int i = 0; i < 128; i++)
+            for (int i = 0; i < n; i++)
             {
                 glm::vec2 p = { rng.uniformf(), rng.uniformf() };
 
@@ -128,7 +129,7 @@ int main() {
         {
             std::vector<kdtree::VecN<3>> points;
 
-            for (int i = 0; i < 128; i++)
+            for (int i = 0; i < n; i++)
             {
                 glm::vec3 p = { rng.uniformf(), rng.uniformf(), rng.uniformf() * 0.2f };
 
@@ -159,6 +160,7 @@ int main() {
         ImGui::SetNextWindowSize({ 500, 800 }, ImGuiCond_Once);
         ImGui::Begin("Panel");
         ImGui::Text("fps = %f", GetFrameRate());
+        ImGui::InputInt("n points", &n); n = std::max(n, 1);
         ImGui::SliderFloat("radius", &radius, 0, 1);
 
         ImGui::Text("Demo Mode");
