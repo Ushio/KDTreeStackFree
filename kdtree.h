@@ -183,7 +183,11 @@ namespace kdtree
 
             int n = point_end - point_beg;
             int L = lbalanced(n);
+#if 1
             quick_select(indices + point_beg, n, L, [axis, ps](int a, int b) { return ps[a][axis] < ps[b][axis]; });
+#else
+            std::nth_element(indices + point_beg, indices + point_beg + L, indices + point_end, [axis, ps](int a, int b) { return ps[a][axis] < ps[b][axis]; });
+#endif
 
             int mid_index = indices[point_beg + L];
             Node<dims> node;
