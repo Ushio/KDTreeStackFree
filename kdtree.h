@@ -282,7 +282,7 @@ namespace kdtree
         int index = 0;
 
         float r2 = FLT_MAX;
-        int closest_index;
+        int closest_index = -1;
 
         int curr_node = 1;
         int prev_node = -1;

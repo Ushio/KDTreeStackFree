@@ -74,19 +74,21 @@ int main() {
         static float radius = 0.2f;
         static glm::vec3 p = { 0.5f, 0.5f, 0 };
         ManipulatePosition(camera, &p, 0.2f);
-        p.z = 0.0f;
 
         enum
         {
             Mode_2D_closest,
             Mode_2D_radius,
+            Mode_3D_radius
         };
-        static int mode = Mode_2D_radius;
+        static int mode = Mode_3D_radius;
 
         PCG rng;
 
         if (mode == Mode_2D_closest || mode == Mode_2D_radius)
         {
+            p.z = 0.0f;
+
             std::vector<kdtree::VecN<2>> points;
 
             for (int i = 0; i < 128; i++)
@@ -122,6 +124,32 @@ int main() {
                 });
             }
         }
+        else if (mode == Mode_3D_radius)
+        {
+            std::vector<kdtree::VecN<3>> points;
+
+            for (int i = 0; i < 128; i++)
+            {
+                glm::vec3 p = { rng.uniformf(), rng.uniformf(), rng.uniformf() * 0.2f };
+
+                DrawPoint(p, { 255, 255, 255 }, 8);
+                points.push_back({ p.x, p.y,  p.z });
+            }
+
+            std::vector<kdtree::Node<3>> nodes(kdtree::storage_size(points.size()));
+            kdtree::build(nodes.data(), points.data(), points.size());
+
+            kdtree::volume_visit(nodes.data(), points.size(), [](kdtree::VecN<3> lower, kdtree::VecN<3> upper) {
+                pr::DrawAABB({ lower[0], lower[1], lower[2] }, { upper[0], upper[1], upper[2] }, { 128, 128, 128 });
+            });
+
+            pr::DrawSphere(p, radius, { 255, 255, 0 }, 16, 16);
+
+            kdtree::radius_query(nodes.data(), points.size(), { p.x, p.y, p.z }, radius, [&points](int index) {
+                auto p = points[index];
+                DrawPoint({ p[0], p[1], p[2] }, { 255, 0, 0 }, 8);
+            });
+        }
 
         PopGraphicState();
         EndCamera();
@@ -136,6 +164,7 @@ int main() {
         ImGui::Text("Demo Mode");
         ImGui::RadioButton("2D closest", &mode, Mode_2D_closest);
         ImGui::RadioButton("2D radius", &mode, Mode_2D_radius);
+        ImGui::RadioButton("3D radius", &mode, Mode_3D_radius);
 
         ImGui::End();
 
