@@ -71,42 +71,57 @@ int main() {
         DrawGrid(GridAxis::XY, 1.0f, 10, { 128, 128, 128 });
         DrawXYZAxis(1.0f);
 
-        PCG rng;
-
-        std::vector<kdtree::VecN<2>> points;
-
-        for (int i = 0; i < 128; i++)
-        {
-            glm::vec2 p = { rng.uniformf(), rng.uniformf() };
-
-            DrawPoint({ p.x, p.y, 0.0f }, { 255, 255, 255 }, 8);
-            points.push_back({ p.x, p.y });
-        }
-
-        std::vector<kdtree::Node<2>> nodes(kdtree::storage_size(points.size()));
-        kdtree::build(nodes.data(), points.data(), points.size());
-
-        kdtree::volume_visit(nodes.data(), points.size(), [](kdtree::VecN<2> lower, kdtree::VecN<2> upper) {
-            pr::DrawAABB({ lower[0], lower[1], 0.0f }, { upper[0], upper[1], 0.0f }, { 128, 128, 128 });
-        });
-
         static float radius = 0.2f;
         static glm::vec3 p = { 0.5f, 0.5f, 0 };
         ManipulatePosition(camera, &p, 0.2f);
         p.z = 0.0f;
 
-        pr::DrawCircle(p, { 0, 0, 1 }, { 255, 255,0 }, radius);
-        
-        //{
-        //    int idx = kdtree::closest_query_stackfree(nodes.data(), points.size(), { p.x, p.y });
-        //    kdtree::VecN<2> closest = points[idx];
-        //    pr::DrawCircle({ closest[0], closest[1], 0.0f }, { 0, 0, 1 }, { 255, 0, 0 }, 0.01f);
-        //}
+        enum
+        {
+            Mode_2D_closest,
+            Mode_2D_radius,
+        };
+        static int mode = Mode_2D_radius;
 
-        kdtree::radius_query(nodes.data(), points.size(), { p.x, p.y }, radius, [&points](int index) {
-            auto p = points[index];
-            DrawPoint({ p[0], p[1], 0.0f }, { 255, 0, 0 }, 8);
-        });
+        PCG rng;
+
+        if (mode == Mode_2D_closest || mode == Mode_2D_radius)
+        {
+            std::vector<kdtree::VecN<2>> points;
+
+            for (int i = 0; i < 128; i++)
+            {
+                glm::vec2 p = { rng.uniformf(), rng.uniformf() };
+
+                DrawPoint({ p.x, p.y, 0.0f }, { 255, 255, 255 }, 8);
+                points.push_back({ p.x, p.y });
+            }
+
+            std::vector<kdtree::Node<2>> nodes(kdtree::storage_size(points.size()));
+            kdtree::build(nodes.data(), points.data(), points.size());
+
+            kdtree::volume_visit(nodes.data(), points.size(), [](kdtree::VecN<2> lower, kdtree::VecN<2> upper) {
+                pr::DrawAABB({ lower[0], lower[1], 0.0f }, { upper[0], upper[1], 0.0f }, { 128, 128, 128 });
+            });
+            
+            if(mode == Mode_2D_closest)
+            {
+                int idx = kdtree::closest_query_stackfree(nodes.data(), points.size(), { p.x, p.y });
+                kdtree::VecN<2> closest = points[idx];
+
+                DrawPoint({ closest[0], closest[1], 0.0f }, { 255, 0, 0 }, 8);
+                DrawLine({ closest[0], closest[1], 0.0f }, { p[0], p[1], 0.0f }, { 128, 0, 0 }, 2);
+            }
+            else
+            {
+                pr::DrawCircle(p, { 0, 0, 1 }, { 255, 255,0 }, radius);
+
+                kdtree::radius_query(nodes.data(), points.size(), { p.x, p.y }, radius, [&points](int index) {
+                    auto p = points[index];
+                    DrawPoint({ p[0], p[1], 0.0f }, { 255, 0, 0 }, 8);
+                });
+            }
+        }
 
         PopGraphicState();
         EndCamera();
@@ -117,6 +132,10 @@ int main() {
         ImGui::Begin("Panel");
         ImGui::Text("fps = %f", GetFrameRate());
         ImGui::SliderFloat("radius", &radius, 0, 1);
+
+        ImGui::Text("Demo Mode");
+        ImGui::RadioButton("2D closest", &mode, Mode_2D_closest);
+        ImGui::RadioButton("2D radius", &mode, Mode_2D_radius);
 
         ImGui::End();
 

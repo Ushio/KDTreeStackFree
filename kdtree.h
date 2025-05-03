@@ -309,8 +309,7 @@ namespace kdtree
                     r2 = d2;
                     closest_index = node.src_index;
                 }
-                pr::DrawCircle({ node.p[0], node.p[1], 0.0f }, { 0, 0, 1 }, { 0, 0, 255 }, 0.02f);
-                pr::DrawText({ node.p[0], node.p[1], 0.0f }, std::to_string(index++));
+                // pr::DrawCircle({ node.p[0], node.p[1], 0.0f }, { 0, 0, 1 }, { 0, 0, 255 }, 0.02f);
             }
 
             int near_node = l_child(curr_node);
@@ -368,7 +367,7 @@ namespace kdtree
 
             if (descent)
             {
-                pr::DrawCircle({ node.p[0], node.p[1], 0.0f }, { 0, 0, 1 }, { 0, 0, 255 }, 0.02f);
+                //pr::DrawCircle({ node.p[0], node.p[1], 0.0f }, { 0, 0, 1 }, { 0, 0, 255 }, 0.02f);
 
                 float d2 = distanceSquared(node.p, point, dims);
                 if (d2 < r2)
