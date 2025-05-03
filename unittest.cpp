@@ -1,6 +1,7 @@
 #include "catch_amalgamated.hpp"
 #include "pr.hpp"
 #include "kdtree.h"
+#include "nanoflann.hpp"
 
 TEST_CASE("int", "") {
     using namespace pr;
@@ -70,7 +71,7 @@ TEST_CASE("float", "") {
     }
 }
 
-TEST_CASE("tree", "") {
+TEST_CASE("lbalanced", "") {
     REQUIRE(kdtree::lbalanced(1) == 0);
     REQUIRE(kdtree::lbalanced(2) == 1);
     REQUIRE(kdtree::lbalanced(3) == 1);
@@ -92,4 +93,90 @@ TEST_CASE("tree", "") {
     //    int R = n - 1 - L;
     //    printf("n=%d, depth=%d, lMax=%d, rMin=%d, %d-%d\n", n, d, lMax, rMin, L, R);
     //}
+}
+
+template<int dims>
+struct PointCloud
+{
+    std::vector<kdtree::VecN<dims>> points;
+
+    inline size_t kdtree_get_point_count() const { return points.size(); }
+
+    inline float kdtree_get_pt(const size_t idx, const size_t dim) const
+    {
+        return points[idx][dim];
+    }
+    template <class BBOX>
+    bool kdtree_get_bbox(BBOX& /* bb */) const
+    {
+        return false;
+    }
+};
+
+TEST_CASE("tree", "") {
+    using namespace pr;
+
+    PCG rng;
+
+    enum {
+        dims = 3
+    };
+    for (int i = 0; i < 1000; i++)
+    {
+        PointCloud<dims> cloud;
+
+        for (int j = 0; j < 1000; j++)
+        {
+            kdtree::VecN<dims> p;
+            for (int k = 0; k < dims; k++)
+            {
+                p[k] = rng.uniformf();
+            }
+            cloud.points.push_back(p);
+        }
+
+        // nanoflann
+        using kdAdapter = nanoflann::KDTreeSingleIndexAdaptor<
+            nanoflann::L2_Simple_Adaptor<float, PointCloud<dims>>,
+            PointCloud<dims>, dims /* dim */
+        >;
+
+        kdAdapter kdtree(dims /*dim*/, cloud, { 10 /* max leaf */ });
+
+        // kdtree
+        std::vector<kdtree::Node<dims>> nodes(kdtree::storage_size(cloud.points.size()));
+        kdtree::build(nodes.data(), cloud.points.data(), cloud.points.size());
+
+        for (int j = 0; j < 1000; j++)
+        {
+            float radius = rng.uniformf() * 0.2f;
+            kdtree::VecN<dims> query_pt;
+            for (int k = 0; k < dims; k++)
+            {
+                query_pt[k] = rng.uniformf();
+            }
+
+            uint32_t ref_hash = 0;
+            {
+                static std::vector<nanoflann::ResultItem<uint32_t, float>> ret_matches;
+           
+                size_t nMatches = kdtree.radiusSearch(query_pt.xs, radius * radius, ret_matches);
+
+                for (size_t i = 0; i < nMatches; i++)
+                {
+                    uint32_t index = ret_matches[i].first;
+                    ref_hash ^= index;
+                }
+            }
+
+            uint32_t my_hash = 0;
+            {
+                kdtree::radius_query(nodes.data(), cloud.points.size(), query_pt, radius, [&my_hash](uint32_t index) {
+                    my_hash ^= index;
+                });
+            }
+
+            REQUIRE(my_hash == ref_hash);
+        }
+    }
 }

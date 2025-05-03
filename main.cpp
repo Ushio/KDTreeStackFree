@@ -4,7 +4,24 @@
 #include <vector>
 
 #include "kdtree.h"
+#include "nanoflann.hpp"
 
+struct PointCloud
+{
+    std::vector<kdtree::VecN<2>> points;
+
+    inline size_t kdtree_get_point_count() const { return points.size(); }
+
+    inline float kdtree_get_pt(const size_t idx, const size_t dim) const
+    {
+        return points[idx][dim];
+    }
+    template <class BBOX>
+    bool kdtree_get_bbox(BBOX& /* bb */) const
+    {
+        return false;
+    }
+};
 
 int main() {
     using namespace pr;
@@ -80,9 +97,10 @@ int main() {
         {
             Mode_2D_closest,
             Mode_2D_radius,
-            Mode_3D_radius
+            Mode_3D_radius,
+            Mode_2D_nanoflann_radius,
         };
-        static int mode = Mode_3D_radius;
+        static int mode = Mode_2D_nanoflann_radius;
 
         PCG rng;
 
@@ -151,7 +169,40 @@ int main() {
                 DrawPoint({ p[0], p[1], p[2] }, { 255, 0, 0 }, 8);
             });
         }
+        else if (mode == Mode_2D_nanoflann_radius)
+        {
+            p.z = 0.0f;
 
+            pr::DrawCircle(p, { 0, 0, 1 }, { 255, 255,0 }, radius);
+
+            PointCloud cloud;
+
+            for (int i = 0; i < n; i++)
+            {
+                glm::vec2 p = { rng.uniformf(), rng.uniformf() };
+
+                DrawPoint({ p.x, p.y, 0.0f }, { 255, 255, 255 }, 8);
+                cloud.points.push_back({ p.x, p.y });
+            }
+
+            using kdAdapter = nanoflann::KDTreeSingleIndexAdaptor<
+                nanoflann::L2_Simple_Adaptor<float, PointCloud>,
+                PointCloud, 2 /* dim */
+            >;
+
+            kdAdapter kdtree(2 /*dim*/, cloud, { 10 /* max leaf */ });
+
+            std::vector<nanoflann::ResultItem<uint32_t, float>> ret_matches;
+
+            const float query_pt[2] = { p.x, p.y };
+            const size_t nMatches = kdtree.radiusSearch(query_pt, radius * radius, ret_matches);
+
+            for (size_t i = 0; i < nMatches; i++)
+            {
+                auto p = cloud.points[ret_matches[i].first];
+                DrawPoint({ p[0], p[1], 0}, {255, 0, 0}, 8);
+            }
+        }
         PopGraphicState();
         EndCamera();
 
@@ -167,6 +218,7 @@ int main() {
         ImGui::RadioButton("2D closest", &mode, Mode_2D_closest);
         ImGui::RadioButton("2D radius", &mode, Mode_2D_radius);
         ImGui::RadioButton("3D radius", &mode, Mode_3D_radius);
+        ImGui::RadioButton("2D nanoflann radius", &mode, Mode_2D_nanoflann_radius);
 
         ImGui::End();
 
