@@ -118,14 +118,18 @@ TEST_CASE("tree", "") {
 
     PCG rng;
 
+    double nanoflann_time = 0.0;
+    double stackfree_time = 0.0;
+
     enum {
-        dims = 3
+        dims = 2
     };
+
     for (int i = 0; i < 1000; i++)
     {
         PointCloud<dims> cloud;
 
-        for (int j = 0; j < 1000; j++)
+        for (int j = 0; j < 4096; j++)
         {
             kdtree::VecN<dims> p;
             for (int k = 0; k < dims; k++)
@@ -149,7 +153,7 @@ TEST_CASE("tree", "") {
 
         for (int j = 0; j < 1000; j++)
         {
-            float radius = rng.uniformf() * 0.2f;
+            float radius = rng.uniformf() * 0.1f;
             kdtree::VecN<dims> query_pt;
             for (int k = 0; k < dims; k++)
             {
@@ -159,24 +163,29 @@ TEST_CASE("tree", "") {
             uint32_t ref_hash = 0;
             {
                 static std::vector<nanoflann::ResultItem<uint32_t, float>> ret_matches;
-           
+                
+                Stopwatch sw;
                 size_t nMatches = kdtree.radiusSearch(query_pt.xs, radius * radius, ret_matches);
-
                 for (size_t i = 0; i < nMatches; i++)
                 {
                     uint32_t index = ret_matches[i].first;
                     ref_hash ^= index;
                 }
+                nanoflann_time += sw.elapsed();
             }
 
             uint32_t my_hash = 0;
             {
+                Stopwatch sw;
                 kdtree::radius_query(nodes.data(), cloud.points.size(), query_pt, radius, [&my_hash](uint32_t index) {
                     my_hash ^= index;
                 });
+                stackfree_time += sw.elapsed();
             }
 
             REQUIRE(my_hash == ref_hash);
         }
     }
+    printf("nanoflann %f\n", nanoflann_time);
+    printf("stackfree %f\n", stackfree_time);
 }
