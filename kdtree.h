@@ -410,4 +410,48 @@ namespace kdtree
             curr_node = next_node;
         }
     }
+
+    namespace details
+    {
+        template <int dims, class F>
+        void radius_query_stackful(const Node<dims>* nodes, int nPoints, int curr_node, const VecN<dims>& point, float r2, F f)
+        {
+            if (nPoints < curr_node)
+            {
+                return;
+            }
+
+            auto node = nodes[curr_node];
+
+            //pr::DrawCircle({ node.p[0], node.p[1], 0.0f }, { 0, 0, 1 }, { 0, 0, 255 }, 0.02f);
+
+            float d2 = distanceSquared(node.p, point, dims);
+            if (d2 < r2)
+            {
+                f(node.src_index);
+            }
+
+            int near_node = l_child(curr_node);
+            int far_node = r_child(curr_node);
+
+            float d = point[node.axis] - node.p[node.axis];
+            if (0.0f < d)
+            {
+                std::swap(near_node, far_node);
+            }
+
+            radius_query_stackful(nodes, nPoints, near_node, point, r2, f);
+            bool traverse_far = d * d < r2;
+            if (traverse_far)
+            {
+                radius_query_stackful(nodes, nPoints, far_node, point, r2, f);
+            }
+        }
+    }
+
+    template <int dims, class F>
+    void radius_query_stackful(const Node<dims>* nodes, int nPoints, const VecN<dims>& point, float radius, F f)
+    {
+        details::radius_query_stackful(nodes, nPoints, 1, point, radius * radius, f);
+    }
 }
