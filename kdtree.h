@@ -283,7 +283,7 @@ namespace kdtree
 
 
     template <int dims>
-    inline int closest_query_stackfree(const Node<dims>* nodes, int nPoints, VecN<dims> point)
+    inline int closest_query(const Node<dims>* nodes, int nPoints, VecN<dims> point)
     {
         int index = 0;
 

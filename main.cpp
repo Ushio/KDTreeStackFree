@@ -100,7 +100,7 @@ int main() {
             Mode_3D_radius,
             Mode_2D_nanoflann_radius,
         };
-        static int mode = Mode_2D_closest;
+        static int mode = Mode_2D_radius;
 
         PCG rng;
 
@@ -127,7 +127,7 @@ int main() {
             
             if(mode == Mode_2D_closest)
             {
-                int idx = kdtree::closest_query_stackfree(nodes.data(), points.size(), { p.x, p.y });
+                int idx = kdtree::closest_query(nodes.data(), points.size(), { p.x, p.y });
                 kdtree::VecN<2> closest = points[idx];
 
                 DrawPoint({ closest[0], closest[1], 0.0f }, { 255, 0, 0 }, 8);
