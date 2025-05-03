@@ -100,7 +100,7 @@ int main() {
             Mode_3D_radius,
             Mode_2D_nanoflann_radius,
         };
-        static int mode = Mode_2D_nanoflann_radius;
+        static int mode = Mode_2D_closest;
 
         PCG rng;
 
