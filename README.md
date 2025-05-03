@@ -4,6 +4,10 @@
 
 ![demo](demo.gif)
 
+## visualization of the idea of the next node to step to
+
+![idea](idea.png)
+
 ## build
 
 ```
