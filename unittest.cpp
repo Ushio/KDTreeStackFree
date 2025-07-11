@@ -201,7 +201,7 @@ TEST_CASE("comparison", "")
     const int mQuery = 1000 * 1000;
     const int N = 1000 * 10;
     //const float radius = 0.01f;
-    PCG rng;
+    PCG rng(123, 456);
 
     uint32_t g_hash = 0;
 
